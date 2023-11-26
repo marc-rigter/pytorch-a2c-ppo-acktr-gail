@@ -2,6 +2,7 @@ import copy
 import glob
 import os
 import time
+import wandb
 from collections import deque
 
 import gym
@@ -102,6 +103,7 @@ def main():
     start = time.time()
     num_updates = int(
         args.num_env_steps) // args.num_steps // args.num_processes
+    wandb.init(entity="a2i", project="polygrad_results", group=args.group, config=args)
     for j in range(num_updates):
 
         if args.use_linear_lr_decay:
@@ -186,6 +188,16 @@ def main():
                         np.median(episode_rewards), np.min(episode_rewards),
                         np.max(episode_rewards), dist_entropy, value_loss,
                         action_loss))
+            wandb.log({
+                "env_steps": total_num_steps,
+                "FPS": int(total_num_steps / (end - start)),
+                "mean reward": np.mean(episode_rewards),
+                "min reward": np.min(episode_rewards),
+                "max reward": np.max(episode_rewards),
+                "policy_entropy": dist_entropy,
+                "value_loss": value_loss,
+                "action_loss": action_loss
+            })
 
         if (args.eval_interval is not None and len(episode_rewards) > 1
                 and j % args.eval_interval == 0):
